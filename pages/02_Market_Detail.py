@@ -119,3 +119,12 @@ if trades:
             st.write(f"${getattr(t, 'stake', 0):.0f}")
         with col3:
             st.caption(getattr(t, 'rationale', '')[:100] + "...")
+
+if m.status == "resolved" and st.button("⚖️ Dispute This Resolution"):
+    session = get_session()
+    target = session.get(Market, market_id)  # fetch fresh from new session
+    target.status = "disputed"
+    session.commit()
+    session.close()
+    st.rerun()
+

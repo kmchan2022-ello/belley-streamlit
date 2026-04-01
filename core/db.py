@@ -1,6 +1,16 @@
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, ForeignKey
+from sqlalchemy import (
+    create_engine,
+    Column,
+    Integer,
+    String,
+    Float,
+    Text,
+    DateTime,
+    ForeignKey,
+)
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
+
 
 engine = create_engine("sqlite:///foresight.db", echo=False)
 SessionLocal = sessionmaker(bind=engine)
@@ -11,11 +21,13 @@ class User(Base):
     __tablename__ = "users"
     id = Column(Integer, primary_key=True)
     name = Column(String, unique=True)           # Public username
-    email = Column(String, unique=True)          # ← ADD THIS LINE  
+    email = Column(String, unique=True)          # Email
     role = Column(String)
-    position = Column(String)                    # ← ADD IF MISSING
+    position = Column(String)                    # Department / title
     token_balance = Column(Float, default=1000.0)
     credibility_score = Column(Float, default=1.0)
+    is_approver = Column(Integer, default=0)  # 0 = False, 1 = True
+
 
 
 class Market(Base):
@@ -60,10 +72,22 @@ class Event(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
 
-def init_db():
-    Base.metadata.create_all(bind=engine)
+# NEW: DisputeHandler model so you can import it
+class DisputeHandler(Base):
+    __tablename__ = "dispute_handlers"
+    id = Column(Integer, primary_key=True)
+    market_id = Column(Integer, ForeignKey("markets.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    stake_amount = Column(Float, default=50.0)
+    status = Column(String, default="pending")   # pending/accepted/voted/paid
+    voted_outcome = Column(Float, nullable=True) # 1.0 for YES, 0.0 for NO
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 def get_session():
     return SessionLocal()
 
+
+def init_db():
+    """Create tables if they do not exist."""
+    Base.metadata.create_all(bind=engine)

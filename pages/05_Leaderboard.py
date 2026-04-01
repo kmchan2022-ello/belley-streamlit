@@ -1,9 +1,9 @@
-# pages/05_Leaderboard.py - FINAL BULLETPROOF VERSION
+# pages/05_Leaderboard.py - SIMPLIFIED VERSION (No market participation)
 import streamlit as st
 import pandas as pd
 from datetime import datetime, timedelta
 from sqlalchemy import func
-from core.db import get_session, User, Trade, Market
+from core.db import get_session, User, Trade
 
 st.title("🏆 Leaderboard - Top Credibility Scores")
 
@@ -64,40 +64,6 @@ try:
             st.metric("Score", f"{row['credibility_score']:.0f}")
         with col4:
             st.metric("Trades", f"{int(row['trade_count'])}")
-
-    # ✅ FIXED Markets Participated - Start from TRADE records
-    st.markdown("## 📊 Markets Participated")
-    for i in range(len(top3)):
-        row = top3.iloc[i]
-        with st.expander(f"#{i+1} {row['name']} Markets", expanded=(i == 0)):
-            # Start with user's trades, JOIN to markets
-            user_markets = (
-                session.query(
-                    Market.question,
-                    Trade.side,
-                    Trade.stake,
-                    Trade.p_before,
-                    Trade.timestamp
-                )
-                .select_from(Trade)  # ✅ Start from Trade table
-                .filter(Trade.user_id == row["user_id"])  # User's trades only
-                .join(Market, Market.id == Trade.market_id)  # Join to market
-                .order_by(Trade.timestamp.desc())
-                .limit(10)
-                .all()
-            )
-
-            if user_markets:
-                df_markets = pd.DataFrame(
-                    user_markets,
-                    columns=["Question", "Side", "Stake", "P(Yes)", "Date"]
-                )
-                df_markets["Stake"] = pd.to_numeric(df_markets["Stake"], errors="coerce").fillna(0)
-                st.dataframe(df_markets, use_container_width=True)
-            else:
-                st.info("No market data.")
-
-
 
     # Summary
     col1, col2, col3 = st.columns(3)
